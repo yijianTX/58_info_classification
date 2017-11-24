@@ -60,7 +60,7 @@ pos_jieba_needed = ['n', 'ns', 'nt', 'nz', 'v', 'vn', 'a', 'an', 'j', 'l', 't', 
 # 人工标签词典中需要的词性
 pos_manual_needed = ["flbt", "flbx", "jy", "gt", "fljq", "flly", "zw", "cs", "hy", "jn", "pp", "nl", "xh", "rj", "sg", "wg", "xb", "xg", "xx", "yxz", "xl", "zs", "zy"]
 
-# 去除数据中的html标签
+# 数据中的html标签
 html_pat = ur"</?(?:head|body|pstyle|p|strong|spanstyle|span|brstyle|br|b|palign|fontcolor|font|table|tr)[/\w\s:;!@#$%\"\'\?\.,\^\&\*\(\)\-\+=微软雅黑]*/?>"
 
 class Pretreatment(object):
@@ -106,10 +106,10 @@ class Pretreatment(object):
 
 				if self.use_segment:
 					_ = pg.cut(d_first["title"] + " " + d_first["content"])
-					self.x.append([item.word for item in _ if item.flag in self.pos_set and item.word not in self.stopwords_set][:self.sentence_max_length])
+					self.x.append([item.word.strip() for item in _ if len(item.word.strip()) and item.flag in self.pos_set and item.word not in self.stopwords_set])
 				else:
 					_ = d_first["title"] + d_first["content"]
-					self.x.append([item for item in list(_) if item not in self.stopwords_set][:self.sentence_max_length])
+					self.x.append([item.strip() for item in list(_) if len(item.strip()) and item not in self.stopwords_set])
 
 				# 继续读完文件
 				for line in f:
@@ -123,10 +123,29 @@ class Pretreatment(object):
 
 					if self.use_segment:
 						temp = pg.cut(d_temp["title"] + " " + d_temp["content"])
-						self.x.append([item.word for item in temp if item.flag in self.pos_set and item.word not in self.stopwords_set][:self.sentence_max_length])
+						self.x.append([item.word.strip() for item in temp if len(item.word.strip()) and item.flag in self.pos_set and item.word not in self.stopwords_set])
 					else:
 						temp = d_temp["title"] + d_temp["content"]
-						self.x.append([item for item in list(temp) if item not in self.stopwords_set][:self.sentence_max_length])
+						self.x.append([item.strip() for item in list(temp) if len(item.strip()) and item not in self.stopwords_set])
+
+	def map_vocabs(self):
+		# 用于生成词语和id之间的映射。
+		self.d_vocab = {}
+		idx = 0
+		self.d_vocab["<pad>"] = idx
+		for sentence in self.x:
+			for word in sentence:
+				if word not in self.d_vocab:
+					idx += 1
+					self.d_vocab[word] = idx
+
+	def generate_input(self):
+		# 转化数据为vocab index的向量。
+		temp = [[self.d_vocab[word] for word in sent if word in self.d_vocab] for sent in self.x]
+		self.x = []
+		for sent in temp:
+			sent.extend([ self.d_vocab["<pad>"] ] * (self.sentence_max_length - len(sent)))
+			self.x.append(sent)
 
 if __name__ == "__main__":
 	pretreatment = Pretreatment(
@@ -137,6 +156,9 @@ if __name__ == "__main__":
 		)
 	pretreatment.load_data()
 	print cate_data_count
+	pretreatment.map_vocabs()
+	pretreatment.generate_input()
+	print pretreatment.x[100]
 
 
 	
