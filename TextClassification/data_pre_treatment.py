@@ -72,7 +72,7 @@ class Pretreatment(object):
 		self.use_segment = use_segment
 		if self.use_segment:
 			self.pos_set = set(pos_jieba_needed + pos_manual_needed)
-			jieba.load_userdict(dict_dir_path, "manual_dict.txt")
+			jieba.load_userdict(os.path.join(dict_dir_path, "manual_dict.txt"))
 
 
 	def load_stopwords(self, file_path):
@@ -97,7 +97,7 @@ class Pretreatment(object):
 				test_line = re.sub(html_pat, "", f.readline().strip().lower())
 				d_first = json.loads(test_line)
 				if d_first["catename"] not in cate_id_map:
-					break
+					continue
 				cate_data_count.setdefault(d_first["catename"], 1)
 				cate_id = cate_id_map[d_first["catename"]]
 				label = [0] * len(cate_id_map.keys())
@@ -145,12 +145,12 @@ class Pretreatment(object):
 		self.x = []
 		for sent in temp:
 			sent.extend([ self.d_vocab["<pad>"] ] * (self.sentence_max_length - len(sent)))
-			self.x.append(sent)
+			self.x.append(sent[:self.sentence_max_length])
 
 if __name__ == "__main__":
 	pretreatment = Pretreatment(
-		data_dir_path = "C:/Users/jinhuangyu/Desktop/58_info_classification/TextClassification/data", 
-		dict_dir_path = "C:/Users/jinhuangyu/Desktop/58_info_classification/TextClassification/dict", 
+		data_dir_path = "/opt/Yujinhuang/info_classification/data", 
+		dict_dir_path = "/opt/Yujinhuang/info_classification/dict", 
 		sentence_max_length = 100,
 		use_segment = False
 		)

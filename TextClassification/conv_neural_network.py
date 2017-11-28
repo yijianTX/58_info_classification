@@ -61,7 +61,7 @@ class CNN(object):
 				first_pooled_output_list.append(pooled_res)
 
 		# convert list of tensors into tensor using concat, shape : None * 1 * 1 * first_number_feature_map.
-		first_number_feature_map = number_filters * len(filter_sizes)
+		first_number_feature_map = number_filters * len(filter_size_list)
 		self.first_pool = tf.concat(values = first_pooled_output_list, axis = -1)
 		self.first_pool_flat = tf.reshape(tensor = self.first_pool, shape = [-1, first_number_feature_map])
 
@@ -84,11 +84,13 @@ class CNN(object):
 
 		# cross-entropy loss.
 		with tf.name_scope("loss"):
+			# shape : None.
 			loss = tf.nn.softmax_cross_entropy_with_logits(labels = self.input_y, logits = self.softmax_out)
 			self.loss = tf.reduce_mean(input_tensor = loss) + self.l2_lmbda * regular_term
 
 		# accuracy.
 		with tf.name_scope("accuracy"):
-			y = tf.argmax(input = self.input_y, axis = -1, name = "y")
-			self.accuracy = tf.reduce_mean(input_tensor = tf.cast(x = y, dtype = tf.float32), name = "accuracy")
+			# shape : None
+			self.prediction = tf.equal(x = self.prediction, y = tf.argmax(input = self.input_y, axis = -1))
+			self.accuracy = tf.reduce_mean(input_tensor = tf.cast(x = self.prediction, dtype = tf.float32), name = "accuracy")
 
